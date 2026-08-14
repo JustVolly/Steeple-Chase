@@ -29,6 +29,9 @@ public class TwoPointMover : MonoBehaviour
         Stopped
     }
 
+    private const float MinimumSpeed = 0.01f;
+    private const float MinimumDuration = 0.001f;
+
     [Header("Movement Points")]
     [SerializeField] private Transform pointA;
     [SerializeField] private Transform pointB;
@@ -40,13 +43,13 @@ public class TwoPointMover : MonoBehaviour
     [SerializeField] private bool moveBackAndForth = true;
 
     [Header("A -> B Movement")]
-    [SerializeField, Min(0.01f)] private float speedAToB = 2f;
+    [SerializeField, Min(MinimumSpeed)] private float speedAToB = 2f;
     [SerializeField] private MovementType movementTypeAToB = MovementType.EaseInOut;
     [SerializeField] private AnimationCurve customCurveAToB =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     [Header("B -> A Movement")]
-    [SerializeField, Min(0.01f)] private float speedBToA = 2f;
+    [SerializeField, Min(MinimumSpeed)] private float speedBToA = 2f;
     [SerializeField] private MovementType movementTypeBToA = MovementType.EaseInOut;
     [SerializeField] private AnimationCurve customCurveBToA =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
@@ -82,6 +85,14 @@ public class TwoPointMover : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         ConfigureRigidbody();
+    }
+
+    private void OnValidate()
+    {
+        speedAToB = Mathf.Max(MinimumSpeed, speedAToB);
+        speedBToA = Mathf.Max(MinimumSpeed, speedBToA);
+        waitAtPointA = Mathf.Max(0f, waitAtPointA);
+        waitAtPointB = Mathf.Max(0f, waitAtPointB);
     }
 
     private void Start()
@@ -208,8 +219,8 @@ public class TwoPointMover : MonoBehaviour
             movementEndPosition
         );
 
-        movementDuration = distance / Mathf.Max(speed, 0.01f);
-        movementDuration = Mathf.Max(movementDuration, 0.001f);
+        movementDuration = distance / Mathf.Max(speed, MinimumSpeed);
+        movementDuration = Mathf.Max(movementDuration, MinimumDuration);
 
         activeMovementType = movementType;
         activeCustomCurve = customCurve;
@@ -375,17 +386,24 @@ public class TwoPointMover : MonoBehaviour
     public void ResetMovement()
     {
         isPlaying = false;
+
+        if (!ReferencesAreValid())
+        {
+            currentState = MovementState.Stopped;
+            return;
+        }
+
         InitializePosition();
     }
 
     public void SetForwardSpeed(float newSpeed)
     {
-        speedAToB = Mathf.Max(0.01f, newSpeed);
+        speedAToB = Mathf.Max(MinimumSpeed, newSpeed);
     }
 
     public void SetReturnSpeed(float newSpeed)
     {
-        speedBToA = Mathf.Max(0.01f, newSpeed);
+        speedBToA = Mathf.Max(MinimumSpeed, newSpeed);
     }
 
     private void OnDrawGizmosSelected()
