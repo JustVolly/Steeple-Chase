@@ -2,9 +2,9 @@
 
 # Steeple Chase
 
-### A Unity obstacle-platforming project focused on responsive movement, camera feel, and reusable gameplay hazards.
+### A 3D obstacle-platformer focused on responsive traversal, camera feel, and reusable physics-driven hazards.
 
-`Unity 6000.5.2f1` · `C#` · `Unity Input System` · `Physics-driven gameplay`
+`Unity 6000.5.2f1` · `C#` · `Unity Input System` · `Rigidbody Physics`
 
 </div>
 
@@ -12,66 +12,88 @@
 
 ## Overview
 
-**Steeple Chase** is a 3D Unity project built around traversal through obstacle-heavy environments. The project is used to explore and implement responsive character movement, camera behaviour, and reusable moving hazard systems rather than relying on one-off scene scripting.
+**Steeple Chase** is a Unity 3D obstacle-platforming project built around traversal through moving, rotating, swinging, and orbiting hazards. The engineering focus is on reusable gameplay systems rather than one-off scene scripting: character feel, camera behaviour, moving platforms, and obstacle motion are implemented as configurable components that can be reused across different environments.
 
-The repository currently contains multiple playable/test scenes, including `Main`, `DeathRun`, `Underworld`, `heaven`, and `neon`.
+The development repository contains several gameplay/test environments, including `Main`, `DeathRun`, `Underworld`, `heaven`, and `neon`.
 
-> **Portfolio status:** Private development repository. Gameplay media and a public showcase build can be added separately without exposing the full project source.
+> **Portfolio status:** private development source. Public-facing media can be published separately without exposing the complete project or third-party assets.
 
 ---
 
-## Technical Highlights
+## What I Built
 
-### Character Controller
+### Responsive Rigidbody Character Controller
 
-The custom `ProfessionalCharacterController` is Rigidbody-based and includes:
+`ProfessionalCharacterController` is a custom Rigidbody-based controller with:
 
 - camera-relative movement
-- walk / run / run-boost states
+- walk, run, and run-boost states
 - keyboard and optional mobile joystick input
 - coyote time
 - jump buffering
 - slope-aware ground detection
+- grounded-state loss buffering
 - configurable air control
-- visual-model rotation smoothing
+- smoothed visual-model rotation
 - animation parameter integration
 - collision/rotation stability controls
-- runtime debug support
+- runtime debug overlay and ground-check gizmos
 
-This gives the controller a more forgiving and responsive feel than a minimal movement implementation while keeping the tuning exposed through serialized settings.
+The controller separates the physical player root from the rotating visual model, keeping collisions stable while preserving responsive facing and animation behaviour.
 
-### Platform Camera
+### Reusable Platform Camera
 
-`ProfessionalPlatformCamera` implements a configurable follow system with:
+`ProfessionalPlatformCamera` provides a configurable camera system with:
 
-- per-axis follow controls
-- position smoothing
-- dead-zone support
+- independent X/Y/Z follow controls
+- smooth position tracking
+- optional dead zone
 - movement look-ahead
-- fixed or bounded camera height
-- perspective / orthographic zoom control
+- fixed-height and bounded-height modes
+- perspective and orthographic zoom control
 - camera collision handling
-- target / world-point look modes
-- finish-target focus
+- manual, target, and world-point rotation modes
+- finish-target focus blending
 - camera shake
 - debug gizmos
 
-The camera is designed as a reusable gameplay system rather than being hard-coded to a single scene.
+The camera is reusable across scenes and can be tuned without hard-coding a specific level layout.
 
-### Obstacle & Hazard Systems
+### Physics-Driven Hazard Systems
 
-The project contains reusable C# components for obstacle motion, including:
+The obstacle layer is component-based and includes:
 
-- circular hammer/orbit movement
+- circular/orbiting hammer motion
 - mirrored orbit behaviour
-- continuous, ping-pong and target-angle motion modes
-- hammer swing behaviour
+- continuous, ping-pong, and target-angle movement modes
+- swinging hazards
 - rotating platforms
-- two-point moving platforms
-- Rigidbody-compatible obstacle motion
-- runtime debug controls
+- reusable two-point moving platforms
+- configurable easing curves
+- Rigidbody-compatible movement
+- body-relative and tangent-based obstacle orientation
 
-`HammerOrbitAroundBody` also supports several orientation strategies such as tangent-following, body-relative rotation, looking toward/away from the orbit centre, and preserving the initial rotation.
+`HammerOrbitAroundBody` can follow a generated body circumference while changing orientation strategy independently from its motion path. `TwoPointMover` exposes forward/return speeds, wait times, easing modes, custom curves, and Rigidbody movement as reusable Inspector settings.
+
+---
+
+## Engineering Highlights
+
+### Movement Feel Over Minimal Input Mapping
+
+The character controller includes coyote time and jump buffering so a jump can still register around the edge of a platform or shortly before landing. Air control, run boost, slope validation, and visual rotation are independently tunable.
+
+### Camera as a Gameplay System
+
+Instead of a basic `transform.position = target.position + offset` follow script, the camera composes tracking, dead-zone logic, look-ahead, bounds, collision correction, rotation, zoom, finish focus, and shake into a reusable pipeline.
+
+### Data-Driven Obstacle Tuning
+
+Hazard scripts expose movement modes and tuning through serialized fields. Designers can create different obstacle behaviours from the same component by changing speed, endpoints, angles, waits, easing, mirroring, and rotation strategy rather than duplicating scripts.
+
+### Defensive Runtime Configuration
+
+The portfolio pass keeps existing serialized fields and public entry points intact while improving validation around reusable components. For example, `TwoPointMover` now clamps invalid speed/wait values during editor validation and safely handles reset calls when movement endpoints are missing.
 
 ---
 
@@ -81,10 +103,23 @@ The project contains reusable C# components for obstacle motion, including:
 | --- | --- | --- |
 | Character movement | `Assets/Scripts/ProfessionalCharacterController.cs` | Rigidbody movement, jump feel, state handling, input and animation integration |
 | Platform camera | `Assets/Scripts/ProfessionalPlatformCamera.cs` | Smooth follow, collision, look-ahead, focus and camera feedback |
-| Circular hazard | `Assets/Scripts/HammerOrbitAroundBody.cs` | Reusable obstacle motion, multiple motion modes and orientation strategies |
-| Swinging hazards | `Assets/Scripts/HammerBodySwing.cs` / `TrapHammerSwing.cs` | Configurable moving obstacle behaviour |
-| Moving platforms | `Assets/Scripts/TwoPointMover.cs` / `TrapPlatformRotator.cs` | Reusable environment motion systems |
+| Circular hazard | `Assets/Scripts/HammerOrbitAroundBody.cs` | Reusable orbit motion, mirroring, motion modes and orientation strategies |
+| Swinging hazards | `Assets/Scripts/HammerBodySwing.cs` / `Assets/Scripts/TrapHammerAroundBody.cs` | Configurable obstacle motion |
+| Moving platform | `Assets/Scripts/TwoPointMover.cs` | Bidirectional platform motion, easing curves and Rigidbody support |
 | Orbit geometry | `Assets/Scripts/BodyCircumferenceDrawer.cs` | World-space path/orbit support for gameplay hazards |
+
+---
+
+## Controls
+
+Default desktop input implemented by the custom controller:
+
+- **Move:** `WASD` or arrow keys
+- **Jump:** `Space`
+- **Run / build boost:** `Left Shift`
+- **Mobile:** optional `FixedJoystick` plus public jump/run button callbacks
+
+Bindings and UI wiring can still be configured per scene through Unity.
 
 ---
 
@@ -107,43 +142,20 @@ Steeple-Chase/
 
 ---
 
-## Scenes
+## Tech Stack
 
-The repository includes several environment / gameplay scenes used during development:
-
-- `Main`
-- `DeathRun`
-- `Underworld`
-- `heaven`
-- `neon`
-
-A polished portfolio version should surface only the strongest finished route(s) through gameplay video or GIFs instead of asking a reviewer to inspect every development scene.
-
----
-
-## Portfolio Presentation Plan
-
-For a public-facing version, the recommended review path is:
-
-**Gameplay clip → Core mechanic → My implementation → Selected source → Technical decisions → Result**
-
-The next presentation upgrades are:
-
-1. Add a 10–20 second gameplay GIF/video at the top of this README.
-2. Add 3–5 screenshots showing distinct obstacles/environments.
-3. Add a short controls section.
-4. Add one concise technical breakdown diagram for movement + camera + obstacle interaction.
-5. Add a downloadable build or unlisted gameplay video when ready.
-
----
-
-## Development Notes
-
-- **Engine:** Unity Editor `6000.5.2f1`
+- **Engine:** Unity `6000.5.2f1`
 - **Language:** C#
-- **Input:** Unity Input System with optional mobile joystick support
-- **Movement:** Rigidbody-based
-- **Repository:** private development source
+- **Input:** Unity Input System + optional mobile joystick
+- **Movement:** Rigidbody-based 3D controller
+- **Camera:** custom reusable follow/collision system
+- **Environment:** reusable physics-driven obstacle components
+
+---
+
+## Portfolio Media
+
+The recommended recruiter-facing screenshots, hero GIF, and short gameplay reel are defined in [`docs/portfolio/CAPTURE_GUIDE.md`](docs/portfolio/CAPTURE_GUIDE.md). The capture plan prioritizes movement feel and system variety instead of showing every development scene.
 
 ---
 
@@ -151,6 +163,6 @@ The next presentation upgrades are:
 
 **VÜSAL ALİYEV**
 
-*Build it. Show it. Explain it.*
+*Game Developer · Software Engineer*
 
 </div>
